@@ -199,6 +199,22 @@ data class VoiceProviderTemplate(
                 ),
                 note = "Enter the API Key from the Volcano Engine new console.",
             ),
+            // nanoMuse: SiliconFlow rides the default OpenAI-compatible voice
+            // paths (/v1/audio/transcriptions + /v1/audio/speech), so it needs
+            // no vendor adapter, only a template entry to seed its ASR/TTS models.
+            VoiceProviderTemplate(
+                id = "siliconflow",
+                name = "SiliconFlow",
+                providerType = ProviderType.openAI,
+                baseURL = "https://api.siliconflow.cn/v1",
+                appendV1 = false,
+                capability = Capability.BOTH,
+                baseURLMarkers = listOf("siliconflow"),
+                mockModels = listOf(
+                    asr("FunAudioLLM/SenseVoiceSmall", "SenseVoice (ASR, 中英)", "siliconflow"),
+                    tts("FunAudioLLM/CosyVoice2-0.5B", "CosyVoice 2 (TTS)", "siliconflow"),
+                ),
+            ),
             VoiceProviderTemplate(
                 id = "xunfei",
                 name = "iFlytek (Xunfei)",

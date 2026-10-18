@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <!-- T-android-fgs-timeout-crash: switched from dataSync to mediaPlayback.
          dataSync has a hard 6h/24h cumulative cap on Android 14+, after
          which the system throws ForegroundServiceDidNotStopInTimeException
@@ -602,6 +603,15 @@
             android:name="io.github.nanomuse.hub.HubService"
             android:exported="false"
             android:foregroundServiceType="remoteMessaging" />
+
+        <!-- nanoMuse: keeps the microphone legal while the app is backgrounded,
+             so the person can keep talking even while nanoMuse operates other
+             apps. Stage 1 holds the service + notification; the capture loop is
+             wired in a later stage. -->
+        <service
+            android:name="io.github.nanomuse.voice.HandsFreeVoiceService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
 
     </application>
 </manifest>

@@ -418,15 +418,22 @@ fun InlineVoiceInputPanel(
     // [fork] 免提：入口或朗读结束置位后，自动开始一次收音。
     LaunchedEffect(VoiceModePrefs.autoCaptureOnce) {
         if (!VoiceModePrefs.autoCaptureOnce) return@LaunchedEffect
-        VoiceModePrefs.autoCaptureOnce = false
-        if (isTranscribing || isRecording) return@LaunchedEffect
+        if (isTranscribing || isRecording) {
+            VoiceModePrefs.autoCaptureOnce = false
+            return@LaunchedEffect
+        }
         if (!ensureMicPermission()) {
+            VoiceModePrefs.autoCaptureOnce = false
             permissionDenied = true
             return@LaunchedEffect
         }
         permissionDenied = false
         if (isEditing) leaveEditMode()
         startCapture()
+        // nanoMuse: reset the flag AFTER capture starts. The flag is this
+        // effect's key, so mutating it early cancels the effect before
+        // startCapture() runs (the effect would relaunch with key=false).
+        VoiceModePrefs.autoCaptureOnce = false
     }
 
     // nanoMuse: hands-free voice. Once a final take lands and the engine is

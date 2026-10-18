@@ -6563,6 +6563,7 @@ fun ChatScreen(
                                 voiceUsedSinceClear = true
                                 com.openminis.app.ui.chat.voice.VoiceModePrefs.enteredFromText = true
                                 com.openminis.app.ui.chat.voice.VoiceModePrefs.isVoiceActive = true
+                                com.openminis.app.ui.chat.voice.VoiceModePrefs.autoCaptureOnce = true
                             }
                         }
 
@@ -6579,19 +6580,23 @@ fun ChatScreen(
                         // already moved to hasMicrophoneHardware. Entering the
                         // panel without a live engine is fine: the panel owns
                         // the "no engine → here's how to configure one" story.
-                        LaunchedEffect(Unit) {
+                        val pendingChatAction by com.openminis.app.deeplink.DeepLinkCoordinator
+                            .pendingChatAction.collectAsState()
+                        LaunchedEffect(pendingChatAction) {
+                            if (pendingChatAction != com.openminis.app.deeplink.DeepLinkCoordinator
+                                    .ChatAction.START_VOICE
+                            ) {
+                                return@LaunchedEffect
+                            }
+                            com.openminis.app.deeplink.DeepLinkCoordinator.consumePendingChatAction()
                             if (!com.openminis.app.speech.SpeechRecognitionManager
                                     .hasMicrophoneHardware
                             ) {
                                 return@LaunchedEffect
                             }
-                            val pending = com.openminis.app.deeplink.DeepLinkCoordinator
-                                .pendingChatAction.value
-                            if (pending == com.openminis.app.deeplink.DeepLinkCoordinator
-                                    .ChatAction.START_VOICE
-                            ) {
-                                com.openminis.app.deeplink.DeepLinkCoordinator
-                                    .consumePendingChatAction()
+                            if (com.openminis.app.ui.chat.voice.VoiceModePrefs.isVoiceActive) {
+                                com.openminis.app.ui.chat.voice.VoiceModePrefs.autoCaptureOnce = true
+                            } else {
                                 triggerVoiceInput()
                             }
                         }

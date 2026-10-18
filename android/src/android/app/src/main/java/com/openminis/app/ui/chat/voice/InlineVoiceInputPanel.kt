@@ -133,6 +133,12 @@ object VoiceModePrefs {
 
     var isVoiceActive by mutableStateOf(false)
 
+    /** 一次性：由入口/朗读结束置位，面板消费后复位，开始一次收音。 */
+    var autoCaptureOnce = false
+
+    /** 一次性：一次收音出 FINAL 后自动发送（Patch D 使用）。 */
+    var autoSendOnce = false
+
     private var expandedState by mutableStateOf(true)
 
     /**
@@ -403,6 +409,20 @@ fun InlineVoiceInputPanel(
             persistExpanded(true)
         }
         SpeechRecognitionManager.refreshSupportedLocales()
+    }
+
+    // [fork] 免提：入口或朗读结束置位后，自动开始一次收音。
+    LaunchedEffect(VoiceModePrefs.autoCaptureOnce) {
+        if (!VoiceModePrefs.autoCaptureOnce) return@LaunchedEffect
+        VoiceModePrefs.autoCaptureOnce = false
+        if (isTranscribing || isRecording) return@LaunchedEffect
+        if (!ensureMicPermission()) {
+            permissionDenied = true
+            return@LaunchedEffect
+        }
+        permissionDenied = false
+        if (isEditing) leaveEditMode()
+        startCapture()
     }
     androidx.compose.runtime.DisposableEffect(Unit) {
         onDispose {

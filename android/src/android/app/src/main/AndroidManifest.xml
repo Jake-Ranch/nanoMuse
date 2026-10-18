@@ -299,6 +299,20 @@
                 android:resource="@xml/shortcuts" />
         </activity-alias>
 
+        <!-- [fork] 免提：给小爱同学一个能"打开"的语音入口 -->
+        <activity
+            android:name="io.github.nanomuse.voice.VoiceEntryActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="语音对话"
+            android:icon="@mipmap/ic_shortcut_voice_chat"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <!-- Share receiver activity -->
         <activity
             android:name=".share.ShareReceiverActivity"

@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <!-- T-android-fgs-timeout-crash: switched from dataSync to mediaPlayback.
          dataSync has a hard 6h/24h cumulative cap on Android 14+, after
          which the system throws ForegroundServiceDidNotStopInTimeException
@@ -313,6 +314,20 @@
             </intent-filter>
         </activity>
 
+        <!-- [fork] 免提：开启常驻唤醒词监听（说「小助手」开始对话） -->
+        <activity
+            android:name="io.github.nanomuse.voice.HotwordEntryActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="唤醒监听"
+            android:icon="@mipmap/ic_shortcut_voice_chat"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <!-- Share receiver activity -->
         <activity
             android:name=".share.ShareReceiverActivity"
@@ -602,6 +617,12 @@
             android:name="io.github.nanomuse.hub.HubService"
             android:exported="false"
             android:foregroundServiceType="remoteMessaging" />
+
+        <!-- nanoMuse: always-on wake-word listener (VAD + cloud check). -->
+        <service
+            android:name="io.github.nanomuse.voice.HotwordService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
 
     </application>
 </manifest>

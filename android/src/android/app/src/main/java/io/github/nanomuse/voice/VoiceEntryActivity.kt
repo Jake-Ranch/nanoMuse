@@ -27,11 +27,6 @@ class VoiceEntryActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // nanoMuse: keep a microphone foreground service alive so the person
-        // can keep talking even after nanoMuse backgrounds itself to operate
-        // another app. Stage 1 only reserves the mic entitlement.
-        HandsFreeVoiceService.start(this)
-
         val target = Intent(this, MainActivity::class.java).apply {
             action = Intent.ACTION_VIEW
             data = Uri.parse("minis://action/voice_chat")

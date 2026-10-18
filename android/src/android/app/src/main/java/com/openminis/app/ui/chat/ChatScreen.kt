@@ -6318,6 +6318,17 @@ fun ChatScreen(
                                 viewModel.setInputText(text)
                                 viewModel.updateSlashMenuState(text)
                             },
+                            // nanoMuse: hands-free voice. Send the finished take
+                            // through the same path as a typed send.
+                            onSendTranscript = { text ->
+                                if (text.isNotBlank()) {
+                                    viewModel.setInputText("")
+                                    releaseComposerAfterSend()
+                                    viewModel.nmMarkPersonTurn()
+                                    viewModel.sendMessage(text)
+                                    noteSendForInputModePref()
+                                }
+                            },
                             ensureMicPermission = { ensureMicPermissionFlow() },
                             // [T-android-correction-context-wiring] Feed AI
                             // correction the live conversation context. Reads the
@@ -6629,6 +6640,27 @@ fun ChatScreen(
                             val ttsMuted by com.openminis.app.speech.VoiceOutputState
                                 .isMuted.collectAsState()
                             val readReplies = ttsEnabled && !ttsMuted
+                            // nanoMuse: hands-free voice. After read-aloud finishes
+                            // speaking the reply, open the mic again so the person
+                            // can keep talking without touching the screen.
+                            val speaking by com.openminis.app.speech.VoiceOutputState
+                                .isSpeaking.collectAsState()
+                            var wasSpeaking by remember {
+                                androidx.compose.runtime.mutableStateOf(false)
+                            }
+                            LaunchedEffect(speaking) {
+                                if (speaking) {
+                                    wasSpeaking = true
+                                    return@LaunchedEffect
+                                }
+                                if (wasSpeaking &&
+                                    com.openminis.app.ui.chat.voice.VoiceModePrefs.isVoiceActive
+                                ) {
+                                    wasSpeaking = false
+                                    kotlinx.coroutines.delay(600)
+                                    com.openminis.app.ui.chat.voice.VoiceModePrefs.autoCaptureOnce = true
+                                }
+                            }
                             // [T-android-provider-tts-readaloud] Routes each
                             // utterance through the resolved Voice Output
                             // selection (provider TTS, system engine as

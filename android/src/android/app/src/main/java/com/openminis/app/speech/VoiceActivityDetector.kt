@@ -145,7 +145,9 @@ class VoiceActivityDetector(
          * The single most user-visible knob: on silence the mic STOPS (see
          * [SegmentEndReason.SILENCE_DETECTED]), matching iOS.
          */
-        private const val END_FRAMES = 156
+        // nanoMuse: 42 ≈ 1.3 s of trailing silence (upstream 156 ≈ 5.0 s) so a
+        // hands-free voice turn turns around faster instead of idling ~5 s.
+        private const val END_FRAMES = 42
 
         // ── Noise-aware AGC (iOS :62-71, :617-655) ──
         private const val GATE_RATIO = 2.5f

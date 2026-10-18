@@ -180,6 +180,8 @@ fun InlineVoiceInputPanel(
     providerRepository: ProviderRepository,
     inputText: String,
     onInputTextChange: (String) -> Unit,
+    // nanoMuse: hands-free voice. The chat page sends the finished transcript.
+    onSendTranscript: (String) -> Unit = {},
     ensureMicPermission: suspend () -> Boolean,
     modifier: Modifier = Modifier,
     // [T-android-correction-context-wiring] Supplies the conversation context
@@ -360,6 +362,8 @@ fun InlineVoiceInputPanel(
                 val joined = captureBase + sep + text
                 captureBase = joined
                 setTranscript(joined)
+                // nanoMuse: a final take means the turn can auto-send.
+                VoiceModePrefs.autoSendOnce = true
             },
             onError = { error, message ->
                 when (error) {
@@ -423,6 +427,16 @@ fun InlineVoiceInputPanel(
         permissionDenied = false
         if (isEditing) leaveEditMode()
         startCapture()
+    }
+
+    // nanoMuse: hands-free voice. Once a final take lands and the engine is
+    // idle again, hand the finished text to the chat page to send.
+    LaunchedEffect(sttState, transcript) {
+        if (!VoiceModePrefs.autoSendOnce) return@LaunchedEffect
+        if (sttState != RecognitionState.IDLE) return@LaunchedEffect
+        if (transcript.isBlank()) return@LaunchedEffect
+        VoiceModePrefs.autoSendOnce = false
+        onSendTranscript(transcript)
     }
     androidx.compose.runtime.DisposableEffect(Unit) {
         onDispose {

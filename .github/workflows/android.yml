@@ -77,8 +77,10 @@ jobs:
         run: |
           set -e
           mkdir -p android/src/android/app/libs
+          # Static-link variant: the app's Silero VAD ships its own libonnxruntime.so,
+          # so the regular AAR would collide at mergeDebugNativeLibs.
           curl -SL -o android/src/android/app/libs/sherpa-onnx.aar \
-            https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.8/sherpa-onnx-1.13.8.aar
+            https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.8/sherpa-onnx-static-link-onnxruntime-1.13.8.aar
           curl -SL -o /tmp/sensevoice.tar.bz2 \
             https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17.tar.bz2
           mkdir -p android/src/android/app/src/main/assets/nanomuse/asr

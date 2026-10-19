@@ -216,6 +216,10 @@ dependencies {
     // 1.6.10, not 2.x: Haze 1.7.x and 2.x need compileSdk 37, and this module is on 36.
     implementation("dev.chrisbanes.haze:haze-android:1.6.10")
 
+    // nanoMuse: built-in offline ASR (sherpa-onnx SenseVoice). The AAR is
+    // downloaded by CI into libs/ before the build.
+    implementation(files("libs/sherpa-onnx.aar"))
+
     // nanoMuse: the camera on a video call (a JPEG frame a second to the real-time model).
     val cameraX = "1.4.2"
     implementation("androidx.camera:camera-core:$cameraX")

@@ -75,7 +75,8 @@ class ProviderSpeechRecognitionEngine(private val appContext: Context) : SpeechR
 
     /** Cheap check only: is a provider ASR selection resolvable right now? */
     override val isAvailable: Boolean
-        get() = !degraded && repository()?.resolveVoiceInputEntry() != null
+        get() = io.github.nanomuse.voice.LocalAsr.isReady ||
+            (!degraded && repository()?.resolveVoiceInputEntry() != null)
 
     /** Cloud ASR is language-agnostic (auto-detect); no fixed locale list. */
     override val supportedLocales: List<Locale> = emptyList()
@@ -147,11 +148,14 @@ class ProviderSpeechRecognitionEngine(private val appContext: Context) : SpeechR
             loadBalanceSeed = kotlin.random.Random.nextInt(Int.MAX_VALUE),
         ).orEmpty()
         if (repo == null || candidates.isEmpty()) {
-            listener.onError(
-                RecognitionError.OEM_NO_SERVICE,
-                "No provider voice-input model configured. Add an ASR model to the Voice Input group.",
-            )
-            return
+            // nanoMuse: built-in offline ASR works with no provider configured.
+            if (!io.github.nanomuse.voice.LocalAsr.isReady) {
+                listener.onError(
+                    RecognitionError.OEM_NO_SERVICE,
+                    "No provider voice-input model configured. Add an ASR model to the Voice Input group.",
+                )
+                return
+            }
         }
         if (recording.getAndSet(true)) {
             listener.onError(RecognitionError.RECOGNIZER_BUSY, "A capture is already in flight.")
@@ -250,7 +254,7 @@ class ProviderSpeechRecognitionEngine(private val appContext: Context) : SpeechR
                 var lastError: Exception? = null
                 for ((instance, entry) in ordered) {
                     if (cancelled.get()) return@launch
-                    val provider = VoiceProviderFactory.make(instance, repo.loadApiKey(instance.id))
+                    val provider = VoiceProviderFactory.make(instance, repo!!.loadApiKey(instance.id))
                     if (provider == null) {
                         Log.w(TAG, "candidate ${instance.label} cannot serve voice input — skipping")
                         continue
@@ -306,7 +310,7 @@ class ProviderSpeechRecognitionEngine(private val appContext: Context) : SpeechR
      */
     private fun startVadCapture(
         locale: Locale,
-        repo: com.openminis.app.data.repository.ProviderRepository,
+        repo: com.openminis.app.data.repository.ProviderRepository?,
         candidates: List<Pair<com.openminis.app.data.model.ProviderInstance, com.openminis.app.data.model.ModelEntry>>,
         captureListener: SpeechRecognitionEngine.Listener,
     ) {
@@ -451,10 +455,23 @@ class ProviderSpeechRecognitionEngine(private val appContext: Context) : SpeechR
     private suspend fun transcribeSegment(
         wav: ByteArray,
         locale: Locale,
-        repo: com.openminis.app.data.repository.ProviderRepository,
+        repo: com.openminis.app.data.repository.ProviderRepository?,
         candidates: List<Pair<com.openminis.app.data.model.ProviderInstance, com.openminis.app.data.model.ModelEntry>>,
         listener: SpeechRecognitionEngine.Listener,
     ) {
+        // nanoMuse: built-in offline ASR (sherpa-onnx SenseVoice). When the
+        // local model is ready, transcribe on-device and skip the cloud chain,
+        // so voice input needs no ASR API at all.
+        if (io.github.nanomuse.voice.LocalAsr.isReady) {
+            val text = io.github.nanomuse.voice.LocalAsr.transcribe(wav)
+            if (cancelled.get()) return
+            if (text.isNullOrBlank()) {
+                listener.onError(RecognitionError.NO_MATCH, "Empty transcription.")
+            } else {
+                listener.onFinal(text)
+            }
+            return
+        }
         val ordered = stickyEntryId
             ?.let { sticky -> candidates.indexOfFirst { it.second.id == sticky } }
             ?.takeIf { it > 0 }
@@ -463,7 +480,7 @@ class ProviderSpeechRecognitionEngine(private val appContext: Context) : SpeechR
         var lastError: Exception? = null
         for ((instance, entry) in ordered) {
             if (cancelled.get()) return
-            val provider = VoiceProviderFactory.make(instance, repo.loadApiKey(instance.id))
+            val provider = VoiceProviderFactory.make(instance, repo!!.loadApiKey(instance.id))
             if (provider == null) {
                 Log.w(TAG, "candidate ${instance.label} cannot serve voice input — skipping")
                 continue

@@ -73,6 +73,23 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
+      - name: Download sherpa-onnx AAR and SenseVoice model
+        run: |
+          set -e
+          mkdir -p android/src/android/app/libs
+          curl -SL -o android/src/android/app/libs/sherpa-onnx.aar \
+            https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.8/sherpa-onnx-1.13.8.aar
+          curl -SL -o /tmp/sensevoice.tar.bz2 \
+            https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17.tar.bz2
+          mkdir -p android/src/android/app/src/main/assets/nanomuse/asr
+          tar xjf /tmp/sensevoice.tar.bz2 -C /tmp
+          cp /tmp/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17/model.int8.onnx \
+             android/src/android/app/src/main/assets/nanomuse/asr/
+          cp /tmp/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17/tokens.txt \
+             android/src/android/app/src/main/assets/nanomuse/asr/
+          ls -lh android/src/android/app/libs \
+                 android/src/android/app/src/main/assets/nanomuse/asr
+
       - name: Native artifacts (proot, Alpine rootfs, rclone.aar)
         env:
           GOTOOLCHAIN: auto

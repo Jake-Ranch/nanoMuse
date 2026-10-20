@@ -80,6 +80,9 @@ class HotwordService : Service() {
     }
 
     private suspend fun loop() {
+        // nanoMuse: lazy-start the built-in offline ASR; until it is ready the
+        // engine falls back to the configured provider / system recognizer.
+        io.github.nanomuse.voice.LocalAsr.ensureInit(this)
         while (true) {
             // Pause while the person is using the app, so the listener never
             // competes with the voice panel for the microphone.

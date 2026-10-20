@@ -32,6 +32,9 @@ object LocalAsr {
     /** True once the model is unpacked and the recognizer is loaded. */
     val isReady: Boolean get() = ready
 
+    /** Idempotent entry point; safe to call from any thread. */
+    fun ensureInit(context: Context) = init(context)
+
     @Synchronized
     fun init(context: Context) {
         if (initStarted) return

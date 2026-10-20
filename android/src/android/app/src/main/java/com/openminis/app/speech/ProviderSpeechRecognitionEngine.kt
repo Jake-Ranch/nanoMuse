@@ -138,6 +138,8 @@ class ProviderSpeechRecognitionEngine(private val appContext: Context) : SpeechR
 
     @SuppressLint("MissingPermission") // caller ensures RECORD_AUDIO per interface contract
     override fun start(locale: Locale, listener: SpeechRecognitionEngine.Listener) {
+        // nanoMuse: lazy-start the built-in offline ASR (no-op once running).
+        io.github.nanomuse.voice.LocalAsr.ensureInit(appContext)
         val repo = repository()
         // [T-voice-asr-group-failover] Resolve the whole ordered candidate
         // chain instead of one entry. loadBalance groups get a fresh rotation

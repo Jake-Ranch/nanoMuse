@@ -174,10 +174,6 @@ object SpeechRecognitionManager {
         engines.add(SystemSpeechRecognitionEngine(appContext))
         engines.add(ProviderSpeechRecognitionEngine(appContext))
 
-        // nanoMuse: built-in offline ASR (sherpa-onnx SenseVoice), unpacked on
-        // a background thread; LocalAsr.isReady flips true once loaded.
-        io.github.nanomuse.voice.LocalAsr.init(appContext)
-
         _selectedEngineId.value = prefs.getString(KEY_ENGINE_ID, null) ?: pickDefaultEngineId()
         prefs.getString(KEY_LOCALE, null)?.let { tag ->
             runCatching { _locale.value = Locale.forLanguageTag(tag) }

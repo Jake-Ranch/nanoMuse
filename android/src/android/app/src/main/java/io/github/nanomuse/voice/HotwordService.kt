@@ -80,10 +80,10 @@ class HotwordService : Service() {
     }
 
     private suspend fun loop() {
-        // nanoMuse: lazy-start the built-in offline ASR; until it is ready the
-        // engine falls back to the configured provider / system recognizer.
+        // nanoMuse: lazy-start the built-in offline ASR.
         io.github.nanomuse.voice.LocalAsr.ensureInit(this)
         while (true) {
+            updateNotification()
             // Pause while the person is using the app, so the listener never
             // competes with the voice panel for the microphone.
             if (isAppForeground()) {
@@ -92,6 +92,12 @@ class HotwordService : Service() {
             }
             if (VoiceModePrefs.isVoiceActive) {
                 delay(5_000)
+                continue
+            }
+            // nanoMuse: wait for the offline model; never fall back to the
+            // discontinued system recognizer.
+            if (!io.github.nanomuse.voice.LocalAsr.isReady) {
+                delay(3_000)
                 continue
             }
             if (SpeechRecognitionManager.state.value != RecognitionState.IDLE) {
@@ -148,6 +154,11 @@ class HotwordService : Service() {
         } == true
     }
 
+    private fun updateNotification() {
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        runCatching { nm.notify(NOTIFICATION_ID, build()) }
+    }
+
     private fun build(): Notification {
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && nm.getNotificationChannel(CHANNEL) == null) {
@@ -162,10 +173,15 @@ class HotwordService : Service() {
             Intent(this, HotwordService::class.java).setAction(ACTION_STOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+        val stateText = when (io.github.nanomuse.voice.LocalAsr.state) {
+            "ready" -> "说「小助手」开始对话"
+            "failed" -> "本地识别加载失败：" + (io.github.nanomuse.voice.LocalAsr.lastError ?: "未知原因")
+            else -> "离线识别模型加载中，请稍候"
+        }
         return NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_nanomuse)
             .setContentTitle("nanoMuse 正在听唤醒词")
-            .setContentText("说「小助手」开始对话，点停止结束")
+            .setContentText(stateText + "，点停止结束")
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)

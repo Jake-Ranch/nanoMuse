@@ -32,6 +32,16 @@ object LocalAsr {
     /** True once the model is unpacked and the recognizer is loaded. */
     val isReady: Boolean get() = ready
 
+    /** Human-readable state, shown in the hotword notification. */
+    @Volatile
+    var state: String = "idle"
+        private set
+
+    /** Non-null when initialization failed; the reason, in one line. */
+    @Volatile
+    var lastError: String? = null
+        private set
+
     /** Idempotent entry point; safe to call from any thread. */
     fun ensureInit(context: Context) = init(context)
 
@@ -41,6 +51,7 @@ object LocalAsr {
         initStarted = true
         Thread {
             try {
+                state = "copying"
                 val dir = File(context.filesDir, "nanomuse_asr").apply { mkdirs() }
                 val model = File(dir, "model.int8.onnx")
                 val tokens = File(dir, "tokens.txt")
@@ -68,10 +79,14 @@ object LocalAsr {
                         provider = "cpu",
                     ),
                 )
+                state = "loading"
                 recognizer = OfflineRecognizer(config = config)
                 ready = true
+                state = "ready"
             } catch (t: Throwable) {
                 android.util.Log.e("LocalAsr", "init failed", t)
+                lastError = t.message ?: t.javaClass.simpleName
+                state = "failed"
                 ready = false
             }
         }.start()

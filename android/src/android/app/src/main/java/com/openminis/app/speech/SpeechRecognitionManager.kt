@@ -300,14 +300,13 @@ object SpeechRecognitionManager {
     }
 
     private fun currentEngine(): SpeechRecognitionEngine? {
+        // nanoMuse: the OEM system recognizer is discontinued on this device
+        // ("即日起本应用不再支持语音输入"); never route to it. The provider
+        // engine transcribes locally (sherpa-onnx) or via a configured ASR key.
         var byId = engines.firstOrNull { it.id == _selectedEngineId.value }
-        // nanoMuse: with built-in offline ASR ready, skip the dead system
-        // recognizer; the provider engine transcribes locally instead.
-        if (_selectedEngineId.value == "system" && io.github.nanomuse.voice.LocalAsr.isReady) {
-            byId = engines.firstOrNull { it.id == "provider" }
-        }
+        if (byId?.id == "system") byId = engines.firstOrNull { it.id == "provider" }
         if (byId != null && byId.isAvailable) return byId
-        return engines.firstOrNull { it.isAvailable }
+        return engines.firstOrNull { it.id != "system" && it.isAvailable }
     }
 
     /**

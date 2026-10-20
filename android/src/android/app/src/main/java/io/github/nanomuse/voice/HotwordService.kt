@@ -49,6 +49,7 @@ class HotwordService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {
+            isRunning = false
             stopSelf()
             return START_NOT_STICKY
         }
@@ -61,15 +62,19 @@ class HotwordService : Service() {
                 startForeground(NOTIFICATION_ID, build())
             }
         } catch (e: Exception) {
+            lastStartError = e.message ?: e.javaClass.simpleName
+            isRunning = false
             runCatching { startForeground(NOTIFICATION_ID, build()) }
             stopSelf()
             return START_NOT_STICKY
         }
+        isRunning = true
         startListening()
         return START_STICKY
     }
 
     override fun onDestroy() {
+        isRunning = false
         scope.cancel()
         SpeechRecognitionManager.stopRecording()
         super.onDestroy()
@@ -194,6 +199,14 @@ class HotwordService : Service() {
         private const val NOTIFICATION_ID = 9109
         private const val ACTION_STOP = "io.github.nanomuse.voice.HOTWORD_STOP"
 
+        /** Live service state, shown by the diagnostic panel. */
+        @Volatile
+        var isRunning: Boolean = false
+
+        /** Why the last start attempt failed, if it did. */
+        @Volatile
+        var lastStartError: String? = null
+
         /** Spoken phrases that wake the listener. Order is irrelevant. */
         val WAKE_WORDS = listOf("小助手", "小缪斯", "缪斯")
 
@@ -207,6 +220,7 @@ class HotwordService : Service() {
                 }
             } catch (e: Exception) {
                 // Background start restrictions: start again from the foreground.
+                lastStartError = e.message ?: e.javaClass.simpleName
             }
         }
 

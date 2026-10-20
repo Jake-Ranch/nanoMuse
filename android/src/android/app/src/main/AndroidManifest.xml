@@ -318,10 +318,9 @@
         <activity
             android:name="io.github.nanomuse.voice.HotwordEntryActivity"
             android:exported="true"
-            android:excludeFromRecents="true"
             android:label="唤醒监听"
             android:icon="@mipmap/ic_shortcut_voice_chat"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            android:theme="@android:style/Theme.DeviceDefault.Light">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
